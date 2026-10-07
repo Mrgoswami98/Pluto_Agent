@@ -1,0 +1,35 @@
+Pluto Advance 0.5 - Your Intelligent Digital Operator
+
+WHAT THIS PROGRAM DOES
+
+Pluto is an AI agent that can act on your computer: read and organise your
+files, analyse spreadsheets, and use a web browser on your behalf. It plans
+what it intends to do, asks before anything consequential, then verifies and
+reports what actually happened.
+
+BEFORE YOU INSTALL, PLEASE KNOW
+
+1. You need your own Claude API key from console.anthropic.com. No key is
+   included with this installer, and usage is billed to your own account.
+
+2. Pluto starts with NO permissions. It cannot touch any file or visit any
+   website until you grant access in the Permissions screen.
+
+3. Sending messages, publishing, purchasing, submitting forms, deleting or
+   overwriting files, installing software and changing system settings ALWAYS
+   require your explicit confirmation. That cannot be switched off.
+
+4. An Emergency Stop is available on every screen. It cancels pending work and
+   asks running work to stop. It cannot recall something already sent to an
+   outside service.
+
+5. This is pre-release software (version 0.5). Windows desktop automation is
+   included but has had limited real-world testing. Review what it proposes
+   before approving it.
+
+6. This build is not code-signed, so Windows SmartScreen may warn you on first
+   run. You can verify your download against the SHA256 checksum published with
+   the release.
+
+Your data (task history, logs, settings) is stored in your own user folder.
+Your API key is stored in the Windows Credential Manager, not in a file.
