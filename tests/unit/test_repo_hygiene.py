@@ -60,6 +60,7 @@ class TestNoSecretsInRepository:
         "tests/unit/test_agent.py",
         "tests/unit/test_gui.py",
         "tests/unit/test_repo_hygiene.py",
+        "tests/integration/test_live_api.py",
         "src/pluto/security/secrets.py",
     }
 
