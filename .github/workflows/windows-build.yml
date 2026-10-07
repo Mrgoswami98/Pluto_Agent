@@ -1,0 +1,131 @@
+name: Windows build
+
+# Builds the real Windows installer on a Windows runner. This is the supported
+# way to produce Pluto-Advance-0.5-Setup.exe: the executable and the installer
+# cannot be built on Linux, and a file renamed to look like an installer is not
+# an installer.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      create_release:
+        description: "Attach the installer to a draft GitHub Release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build installer
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[gui,browser,windows,build,dev]"
+
+      - name: Install Chromium
+        run: playwright install chromium
+
+      # Never ship a build whose tests did not pass.
+      - name: Run tests
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: pytest -v
+
+      - name: Verify the application starts
+        run: pluto --check
+
+      - name: Build the executable
+        run: pyinstaller packaging/windows/pluto.spec --clean --noconfirm
+
+      - name: Confirm the executable exists
+        shell: pwsh
+        run: |
+          $exe = "packaging/windows/dist/PlutoAdvance/PlutoAdvance.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "PyInstaller did not produce $exe"
+            exit 1
+          }
+          $size = (Get-Item $exe).Length
+          Write-Host "Built $exe ($([math]::Round($size/1MB,1)) MB)"
+
+      # Smoke-test the frozen build, not just the source tree. A PyInstaller
+      # bundle can import cleanly in CI and still fail on a user's machine
+      # because of a missing hidden import, so run the real .exe.
+      - name: Smoke-test the frozen executable
+        shell: pwsh
+        run: |
+          $exe = "packaging/windows/dist/PlutoAdvance/PlutoAdvance.exe"
+          & $exe --check
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "The frozen executable failed its health check"
+            exit 1
+          }
+
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the installer
+        run: iscc packaging\windows\installer.iss
+
+      - name: Confirm the installer exists
+        shell: pwsh
+        run: |
+          $setup = "packaging/windows/Output/Pluto-Advance-0.5-Setup.exe"
+          if (-not (Test-Path $setup)) {
+            Write-Error "Inno Setup did not produce $setup"
+            exit 1
+          }
+          $size = (Get-Item $setup).Length
+          $hash = (Get-FileHash $setup -Algorithm SHA256).Hash
+          Write-Host "Installer: $([math]::Round($size/1MB,1)) MB"
+          Write-Host "SHA256: $hash"
+          "$hash  Pluto-Advance-0.5-Setup.exe" |
+            Out-File -Encoding ascii packaging/windows/Output/SHA256SUMS.txt
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pluto-Advance-0.5-Setup
+          path: |
+            packaging/windows/Output/Pluto-Advance-0.5-Setup.exe
+            packaging/windows/Output/SHA256SUMS.txt
+          retention-days: 30
+
+      # Draft only, never published automatically: publishing a release is the
+      # maintainer's decision, not CI's.
+      - name: Create a draft release
+        if: startsWith(github.ref, 'refs/tags/v') || inputs.create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          name: Pluto Advance ${{ github.ref_name }}
+          files: |
+            packaging/windows/Output/Pluto-Advance-0.5-Setup.exe
+            packaging/windows/Output/SHA256SUMS.txt
+          body: |
+            ## Pluto Advance ${{ github.ref_name }}
+
+            Built on `windows-latest` from `${{ github.sha }}`.
+            The test suite and the health check both passed before this
+            installer was produced.
+
+            Verify your download against `SHA256SUMS.txt`.
+
+            **Not code-signed.** Windows SmartScreen will warn on first run.
+            See `docs/BUILD.md` for how to sign a build.
+
+            Read `docs/STATUS.md` for what is tested and what is not.
