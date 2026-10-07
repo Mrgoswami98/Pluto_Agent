@@ -1,0 +1,115 @@
+# ---------------------------------------------------------------------------
+# Pluto Advance 0.5 — .gitignore
+# Security-critical: secrets, user data and local state must never be committed.
+# ---------------------------------------------------------------------------
+
+# --- Secrets & credentials (NEVER COMMIT) ---
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+secrets.json
+credentials.json
+token.json
+*_token
+*.token
+api_key*
+apikey*
+.pluto_secrets/
+
+# --- Local user data / runtime state ---
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+user_data/
+appdata/
+runtime/
+logs/
+*.log
+*.log.*
+screenshots/
+evidence/
+exports/
+.pluto/
+
+# --- Browser automation profiles & session state ---
+browser_profiles/
+playwright_state/
+storage_state.json
+*.har
+cookies.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib60/
+sdist/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+pip-log.txt
+pip-delete-this-directory.txt
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+ENV/
+.python-version
+
+# --- Testing & coverage ---
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.tox/
+.nox/
+.hypothesis/
+test-results/
+junit*.xml
+
+# --- Type checkers / linters ---
+.mypy_cache/
+.dmypy.json
+.ruff_cache/
+.pyre/
+.pytype/
+
+# --- PyInstaller build output ---
+*.manifest
+*.spec.bak
+packaging/windows/build/
+packaging/windows/dist/
+packaging/windows/Output/
+*.exe
+!packaging/windows/.gitkeep
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# --- OS ---
+Thumbs.db
+desktop.ini

@@ -1,0 +1,167 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pluto-advance"
+version = "0.5.0"
+description = "Pluto Advance 0.5 — Your Intelligent Digital Operator. A permission-controlled autonomous desktop agent for Windows."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = { file = "LICENSE" }
+authors = [{ name = "Pluto Advance Project" }]
+keywords = ["ai-agent", "automation", "windows", "claude", "desktop"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: Microsoft :: Windows :: Windows 10",
+    "Operating System :: Microsoft :: Windows :: Windows 11",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Desktop Environment",
+]
+
+dependencies = [
+    "anthropic>=0.40,<2.0",
+    "pydantic>=2.7,<3.0",
+    "pydantic-settings>=2.2,<3.0",
+    "python-dotenv>=1.0,<2.0",
+    "keyring>=25.0,<26.0",
+    "pandas>=2.2",
+    "openpyxl>=3.1,<4.0",
+    "httpx>=0.27",
+]
+
+[project.optional-dependencies]
+gui = ["PySide6>=6.7,<7.0"]
+browser = ["playwright>=1.44,<2.0"]
+windows = [
+    "pywinauto>=0.6.8,<0.7.0; sys_platform == 'win32'",
+    "pywin32>=306; sys_platform == 'win32'",
+    "comtypes>=1.4; sys_platform == 'win32'",
+    "Pillow>=10.0",
+]
+voice = ["sounddevice>=0.4.6", "numpy>=1.26"]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-cov>=5.0",
+    "pytest-timeout>=2.3",
+    "ruff>=0.5",
+    "mypy>=1.10",
+]
+build = ["pyinstaller>=6.6,<7.0"]
+
+[project.scripts]
+pluto = "pluto.__main__:main"
+
+[project.gui-scripts]
+pluto-advance = "pluto.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/OWNER/pluto-advance"
+Issues = "https://github.com/OWNER/pluto-advance/issues"
+Changelog = "https://github.com/OWNER/pluto-advance/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pluto*"]
+
+[tool.setuptools.package-data]
+pluto = ["py.typed", "data/migrations/*.sql", "ui/resources/*"]
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "-ra",
+]
+markers = [
+    "integration: needs real external services; opt in with -m integration",
+    "e2e: end-to-end, needs a real Windows desktop",
+    "windows: requires Microsoft Windows",
+    "gui: requires a Qt display",
+    "slow: takes more than a couple of seconds",
+]
+filterwarnings = ["error::DeprecationWarning:pluto.*"]
+asyncio_mode = "auto"
+timeout = 120
+
+# ---------------------------------------------------------------------------
+# coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["src/pluto"]
+branch = true
+omit = ["*/ui/*", "*/__main__.py", "*/voice/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "@abstractmethod",
+]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 95
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF", "S", "PTH"]
+ignore = [
+    "S101",    # assert is fine in tests
+    "E501",    # line length handled by the formatter
+    "RUF012",  # mutable class attrs without ClassVar
+    # --- deliberate, justified below ---
+    "S110",    # try-except-pass: best-effort cleanup (browser/db teardown) must
+               # never mask the original failure by raising during shutdown
+    "S112",    # try-except-continue: skipping an unreadable file during a scan
+               # is the intended behaviour, not an error
+    "SIM105",  # contextlib.suppress is not clearer than try/except/pass here
+    "S311",    # random is used for retry backoff jitter, never for crypto
+    "UP042",   # StrEnum base kept explicit for Python 3.11 compatibility
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "N802", "N806", "N818", "PTH", "SLF001"]
+"src/pluto/ui/**" = ["N802", "N815"]
+# Table names come from sqlite_master, never from user input; the f-string is
+# unavoidable because PRAGMA and table identifiers cannot be bound parameters.
+"src/pluto/data/database.py" = ["S608"]
+"src/pluto/data/repositories.py" = ["S608"]
+# `Application, Desktop = _load_pywinauto()` returns classes, so the names are
+# intentionally capitalised.
+"src/pluto/automation/windows.py" = ["N806"]
+# DFS colour constants (WHITE/GREY/BLACK) are local by design.
+"src/pluto/core/models.py" = ["N806"]
+
+# ---------------------------------------------------------------------------
+# mypy
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["pluto"]
+warn_unused_configs = true
+warn_redundant_casts = true
+no_implicit_optional = true
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["pluto.ui.*", "pluto.automation.windows.*", "pluto.voice.*"]
+ignore_errors = true
