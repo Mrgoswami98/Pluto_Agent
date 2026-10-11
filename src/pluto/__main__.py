@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from typing import NoReturn
 
@@ -170,7 +171,20 @@ def run_gui(args: argparse.Namespace) -> int:
     return qt_app.exec()
 
 
+def _ensure_std_streams() -> None:
+    """Give a windowed (no-console) frozen build usable stdout/stderr.
+
+    A PyInstaller build with ``console=False`` starts with ``sys.stdout`` and
+    ``sys.stderr`` set to ``None`` unless the parent redirected them, so a
+    plain ``print`` would crash ``--check``. Fall back to the null device.
+    """
+    for name in ("stdout", "stderr"):
+        if getattr(sys, name) is None:
+            setattr(sys, name, open(os.devnull, "w", encoding="utf-8"))  # noqa: SIM115, PTH123
+
+
 def main(argv: list[str] | None = None) -> int:
+    _ensure_std_streams()
     args = _parse_args(argv)
     if args.check:
         return run_check(args)
