@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 
 import pytest
@@ -42,7 +43,7 @@ class TestSettingsDefaults:
 
 class TestSettingsParsing:
     def test_folder_list_parsed_from_string(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.setenv("PLUTO_ALLOWED_FOLDERS", "/tmp/a:/tmp/b")
+        monkeypatch.setenv("PLUTO_ALLOWED_FOLDERS", f"/tmp/a{os.pathsep}/tmp/b")
         s = Settings(_env_file=None)
         assert len(s.allowed_folders) == 2
 

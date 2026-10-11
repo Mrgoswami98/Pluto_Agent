@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -176,6 +177,10 @@ class TestCredentialStore:
         assert backend == "file_fallback"
         assert store.get() == "sk-ant-test-key-value-123456"
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="POSIX permission bits do not apply on Windows (NTFS ACLs are used)",
+    )
     def test_fallback_file_is_not_world_readable(
         self, store: CredentialStore, tmp_path: Path
     ):
