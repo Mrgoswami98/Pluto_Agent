@@ -49,7 +49,7 @@ jobs:
         run: pluto --check
 
       - name: Build the executable
-        run: pyinstaller packaging/windows/pluto.spec --clean --noconfirm
+        run: pyinstaller packaging/windows/pluto.spec --clean --noconfirm --distpath packaging/windows/dist --workpath packaging/windows/build
 
       - name: Confirm the executable exists
         shell: pwsh
@@ -68,9 +68,17 @@ jobs:
       - name: Smoke-test the frozen executable
         shell: pwsh
         run: |
-          $exe = "packaging/windows/dist/PlutoAdvance/PlutoAdvance.exe"
-          & $exe --check
-          if ($LASTEXITCODE -ne 0) {
+          # The build is windowed (no console), so PowerShell's call operator
+          # would not wait for it. Start-Process -Wait gives a real exit code.
+          $exe = (Resolve-Path "packaging/windows/dist/PlutoAdvance/PlutoAdvance.exe").Path
+          $out = Join-Path $env:RUNNER_TEMP "pluto-check.txt"
+          $err = Join-Path $env:RUNNER_TEMP "pluto-check-err.txt"
+          $p = Start-Process -FilePath $exe -ArgumentList "--check" -Wait -PassThru -NoNewWindow `
+                 -RedirectStandardOutput $out -RedirectStandardError $err
+          Get-Content $out -ErrorAction SilentlyContinue
+          Get-Content $err -ErrorAction SilentlyContinue
+          Write-Host "Exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) {
             Write-Error "The frozen executable failed its health check"
             exit 1
           }
